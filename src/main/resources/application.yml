@@ -1,0 +1,30 @@
+server:
+  port: 9090
+spring:
+  application:
+    name: accept_transaction
+t1:
+  scan-path: ru.t1.java.accept_transaction
+  kafka:
+    bootstrap:
+      server: ${KAFKA_SERVER:localhost:9092}
+    consumer:
+      group-id: t1-demo
+      max.poll.records: 10
+      session-timeout: 10000
+      heartbeat.interval: 3000
+    producer:
+      enable: true
+    topic:
+      client_registration: t1_demo_client_registration
+      client_id_registered: t1_demo_client_registered
+      account_registration: t1_demo_accounts
+      client_transaction: t1_demo_transactions
+      transaction_accept: t1_demo_transaction_accept
+      transaction_result: t1_demo_transaction_result
+
+    listener:
+      poll-timeout: 1000
+
+
+
