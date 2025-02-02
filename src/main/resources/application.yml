@@ -23,8 +23,12 @@ t1:
       transaction_accept: t1_demo_transaction_accept
       transaction_result: t1_demo_transaction_result
 
+
     listener:
       poll-timeout: 1000
 
+  limits:
+    transaction_limit: 2
+    transaction_timeframe: 10000
 
 

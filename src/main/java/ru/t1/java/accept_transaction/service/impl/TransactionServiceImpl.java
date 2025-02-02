@@ -12,12 +12,18 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
+import ru.t1.java.accept_transaction.enums.TransactionState;
 import ru.t1.java.accept_transaction.kafka.KafkaProducer;
+import ru.t1.java.accept_transaction.model.dto.TransactionRequest;
+import ru.t1.java.accept_transaction.model.dto.TransactionResponce;
 import ru.t1.java.accept_transaction.service.TransactionService;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -26,17 +32,52 @@ import java.util.concurrent.atomic.AtomicReference;
 @Setter
 @ToString
 @RequiredArgsConstructor
-public class TransactionServiceImpl  implements TransactionService {
+public class TransactionServiceImpl implements TransactionService {
 
     @Value("${t1.kafka.topic.transaction_result}")
     private String topic;
-
+    @Value("${t1.limits.transaction_limit}")
+    private int transactionLimit;
+    @Value("${t1.limits.transaction_timeframe}")
+    private long transactionTimeframe;
     private final KafkaProducer producer;
+    private final Map<String, List<Long>> transactionCounts = new ConcurrentHashMap<>();
 
     @Override
-    public void checkTransactions(List messageList) {
-        log.info("Получена транзакция: " +  messageList.get(0));
+    public void checkTransactions(List<TransactionRequest> messageList) {
 
+        List<TransactionResponce> transactionResponces = new ArrayList<>();
+
+        for (TransactionRequest transactionRequest : messageList) {
+            log.info("Получена транзакция: " + transactionRequest);
+
+            String key = transactionRequest.getClientId().toString() + "_" + transactionRequest.getAccountId().toString();
+
+            long currentTimestamp = System.currentTimeMillis();
+
+            transactionCounts.computeIfPresent(key, (k, timestamps) -> {
+                timestamps.removeIf(timestamp -> currentTimestamp - timestamp > transactionTimeframe);
+                return timestamps;
+            });
+
+            transactionCounts.computeIfAbsent(key, k -> new ArrayList<>()).add(currentTimestamp);
+
+            TransactionResponce transactionResponce = TransactionResponce.builder()
+                    .accountId(transactionRequest.getAccountId())
+                    .transactionId(transactionRequest.getTransactionId())
+                    .build();
+
+            if (transactionCounts.get(key).size() > transactionLimit) {
+                transactionResponce.setState(TransactionState.BLOCKED);
+            } else if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
+                transactionResponce.setState(TransactionState.REJECTED);
+            } else transactionResponce.setState(TransactionState.ACCEPTED);
+
+            transactionResponces.add(transactionResponce);
+        }
+
+        log.error("Проверенные транзакции: " + transactionResponces);
+        registerTransaction(topic, transactionResponces);
     }
 
     @Override
