@@ -15,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransactionResponce {
+public class TransactionResponse {
 
     @JsonProperty("accountId")
     private UUID accountId;

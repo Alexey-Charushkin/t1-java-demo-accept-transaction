@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import ru.t1.java.accept_transaction.enums.TransactionState;
 import ru.t1.java.accept_transaction.kafka.KafkaProducer;
 import ru.t1.java.accept_transaction.model.dto.TransactionRequest;
-import ru.t1.java.accept_transaction.model.dto.TransactionResponce;
+import ru.t1.java.accept_transaction.model.dto.TransactionResponse;
 import ru.t1.java.accept_transaction.service.TransactionService;
 
 import java.util.ArrayList;
@@ -46,8 +46,6 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public void checkTransactions(List<TransactionRequest> messageList) {
 
-        List<TransactionResponce> transactionResponces = new ArrayList<>();
-
         for (TransactionRequest transactionRequest : messageList) {
             log.info("Получена транзакция: " + transactionRequest);
 
@@ -62,31 +60,31 @@ public class TransactionServiceImpl implements TransactionService {
 
             transactionCounts.computeIfAbsent(key, k -> new ArrayList<>()).add(currentTimestamp);
 
-            TransactionResponce transactionResponce = TransactionResponce.builder()
+            TransactionResponse transactionResponse = TransactionResponse.builder()
                     .accountId(transactionRequest.getAccountId())
                     .transactionId(transactionRequest.getTransactionId())
                     .build();
 
             if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
-                transactionResponce.setState(TransactionState.REJECTED);
+                transactionResponse.setState(TransactionState.REJECTED);
                 continue;
             }
             if (transactionCounts.get(key).size() > transactionLimit) {
-                transactionResponce.setState(TransactionState.BLOCKED);
-            } else transactionResponce.setState(TransactionState.ACCEPTED);
+                transactionResponse.setState(TransactionState.BLOCKED);
+            } else transactionResponse.setState(TransactionState.ACCEPTED);
 
-            transactionResponces.add(transactionResponce);
+            log.error("Проверенные транзакции: " + transactionResponse);
+            registerTransaction(topic, transactionResponse);
         }
-        log.error("Проверенные транзакции: " + transactionResponces);
-        registerTransaction(topic, transactionResponces);
+
     }
 
     @Override
-    public <T> T registerTransaction(String topic, T transaction) {
+    public TransactionResponse registerTransaction(String topic, TransactionResponse transaction) {
 
-        AtomicReference<T> saved = new AtomicReference<>();
+        AtomicReference<TransactionResponse> saved = new AtomicReference<>();
 
-        Message<T> message = MessageBuilder.withPayload(transaction)
+        Message<TransactionResponse> message = MessageBuilder.withPayload(transaction)
                 .setHeader(KafkaHeaders.TOPIC, topic)
                 .setHeader(KafkaHeaders.KEY, UUID.randomUUID().toString())
                 .build();
