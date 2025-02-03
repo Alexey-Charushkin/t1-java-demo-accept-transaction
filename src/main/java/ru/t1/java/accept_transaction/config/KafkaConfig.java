@@ -56,6 +56,7 @@ public class KafkaConfig<T> {
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "ru.t1.java.accept_transaction.model.dto.TransactionRequest");
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false); // Используем заголовки для определения типа
+        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 10000);
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeout);
         props.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, maxPartitionFetchBytes);
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, maxPollRecords);
@@ -112,6 +113,8 @@ public class KafkaConfig<T> {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, servers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 10000); // специально увеличил время, что бы при отладке сообщения отправлялись пачками
+        props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, false);

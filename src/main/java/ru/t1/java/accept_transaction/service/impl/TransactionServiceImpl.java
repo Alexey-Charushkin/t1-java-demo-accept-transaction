@@ -67,15 +67,16 @@ public class TransactionServiceImpl implements TransactionService {
                     .transactionId(transactionRequest.getTransactionId())
                     .build();
 
+            if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
+                transactionResponce.setState(TransactionState.REJECTED);
+                continue;
+            }
             if (transactionCounts.get(key).size() > transactionLimit) {
                 transactionResponce.setState(TransactionState.BLOCKED);
-            } else if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
-                transactionResponce.setState(TransactionState.REJECTED);
             } else transactionResponce.setState(TransactionState.ACCEPTED);
 
             transactionResponces.add(transactionResponce);
         }
-
         log.error("Проверенные транзакции: " + transactionResponces);
         registerTransaction(topic, transactionResponces);
     }
