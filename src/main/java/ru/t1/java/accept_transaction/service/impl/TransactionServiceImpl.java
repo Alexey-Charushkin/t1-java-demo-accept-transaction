@@ -67,6 +67,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
                 transactionResponse.setState(TransactionState.REJECTED);
+                registerTransaction(topic, transactionResponse);
                 continue;
             }
             if (transactionCounts.get(key).size() > transactionLimit) {
@@ -79,8 +80,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     }
 
-    @Override
-    public TransactionResponse registerTransaction(String topic, TransactionResponse transaction) {
+    private TransactionResponse registerTransaction(String topic, TransactionResponse transaction) {
 
         AtomicReference<TransactionResponse> saved = new AtomicReference<>();
 

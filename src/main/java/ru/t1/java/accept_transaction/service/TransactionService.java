@@ -8,5 +8,5 @@ import java.util.List;
 public interface TransactionService {
     void  checkTransactions(List<TransactionRequest> messageList);
 
-    TransactionResponse registerTransaction(String topic, TransactionResponse transaction);
+    //TransactionResponse registerTransaction(String topic, TransactionResponse transaction);
 }
