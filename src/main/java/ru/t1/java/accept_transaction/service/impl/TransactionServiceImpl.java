@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
@@ -67,7 +66,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             if (transactionRequest.getTransactionAmount().compareTo(transactionRequest.getAccountBalance()) > 0) {
                 transactionResponse.setState(TransactionState.REJECTED);
-                registerTransaction(topic, transactionResponse);
+                sendTransactionResponse(topic, transactionResponse);
                 continue;
             }
             if (transactionCounts.get(key).size() > transactionLimit) {
@@ -75,14 +74,12 @@ public class TransactionServiceImpl implements TransactionService {
             } else transactionResponse.setState(TransactionState.ACCEPTED);
 
             log.error("Проверенные транзакции: " + transactionResponse);
-            registerTransaction(topic, transactionResponse);
+            sendTransactionResponse(topic, transactionResponse);
         }
 
     }
 
-    private TransactionResponse registerTransaction(String topic, TransactionResponse transaction) {
-
-        AtomicReference<TransactionResponse> saved = new AtomicReference<>();
+    private void sendTransactionResponse(String topic, TransactionResponse transaction) {
 
         Message<TransactionResponse> message = MessageBuilder.withPayload(transaction)
                 .setHeader(KafkaHeaders.TOPIC, topic)
@@ -95,12 +92,10 @@ public class TransactionServiceImpl implements TransactionService {
             ProducerRecord<Object, Object> record = sendResult.getProducerRecord();
             log.info("Message key: {}", record.key());
             log.info("Message value: {}", record.value());
-            saved.set(transaction);
         }).exceptionally(ex -> {
             log.error("Failed to send transaction: {}", ex.getMessage(), ex);
             throw new RuntimeException("Failed to send transaction", ex);
         });
         future.join();
-        return saved.get();
     }
 }

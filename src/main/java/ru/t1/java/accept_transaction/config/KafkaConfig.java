@@ -41,8 +41,8 @@ public class KafkaConfig<T> {
     @Value("${t1.kafka.max.poll.interval.ms:300000}")
     private String maxPollIntervalsMs;
     @Value("${t1.kafka.consumer.heartbeat.interval}")
-
     private String heartbeatInterval;
+
     @Value("${t1.kafka.topic.client_id_registered}")
     private String clientTopic;
 
