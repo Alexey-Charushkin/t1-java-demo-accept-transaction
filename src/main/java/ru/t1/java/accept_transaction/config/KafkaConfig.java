@@ -43,9 +43,6 @@ public class KafkaConfig<T> {
     @Value("${t1.kafka.consumer.heartbeat.interval}")
     private String heartbeatInterval;
 
-    @Value("${t1.kafka.topic.client_id_registered}")
-    private String clientTopic;
-
     @Bean
     public ConsumerFactory<String, Object> consumerListenerFactory() {
         Map<String, Object> props = new HashMap<>();
